@@ -1,0 +1,7 @@
+{
+  "name": "mapbox-tile-server",
+  "version": "0.1.0-dev",
+  "private": true,
+  "main": "index.js",
+  "scripts": {}
+}
