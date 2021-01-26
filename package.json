@@ -3,7 +3,11 @@
   "version": "0.1.0-dev",
   "private": true,
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "build:dev": "webpack --mode development",
+    "build": "webpack --mode production",
+    "deploy": "scripts/deploy.sh"
+  },
   "dependencies": {
     "@mapbox/tiletype": "^0.3.1",
     "aws-sdk": "^2.831.0",
