@@ -10,7 +10,7 @@ module.exports = (env, { mode }) => {
     output: {
       path: resolve(__dirname, "dist"),
       filename: "index.js",
-      libraryTarget: "commonjs",
+      libraryTarget: "commonjs2",
     },
     resolve: {
       extensions: [".ts", ".js", ".json"],
@@ -36,11 +36,11 @@ module.exports = (env, { mode }) => {
         },
       ],
     },
-    externals: ["aws-sdk"],
+  externals: [/^aws-sdk/],
     devtool: mode === "development" && "source-map",
     optimization: {
       minimize: mode === "production",
     },
-    plugins: [new ZipPlugin()],
+    plugins: [new ZipPlugin({ filename: "mapbox-tile-server.zip" })],
   };
 };
