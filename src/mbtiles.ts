@@ -24,7 +24,7 @@ export class MBTiles {
    * Construct an mbtiles instance
    * @param filename database filename
    */
-  constructor(filename: string) {
+  constructor(public readonly id: string, filename: string) {
     this._db = Database(filename, { readonly: true, fileMustExist: true });
     this._tileStmt = this._db.prepare(GET_TILE).raw().pluck();
   }
@@ -59,9 +59,10 @@ export class MBTiles {
 
     return {
       ...info,
+      id: this.id,
       tilejson: "2.2.0",
       scheme: "xyz",
-      tiles: endpoints.split(",").map((endpoint) => `https://${endpoint}/{z}/{x}/{y}.vector.pbf`),
+      tiles: endpoints.split(",").map((endpoint) => `https://${endpoint}/${this.id}/{z}/{x}/{y}.vector.pbf`),
     };
   }
 
@@ -100,7 +101,7 @@ export class MBTiles {
       await downloadTiles(s3Key, filename);
     }
 
-    const mbtiles = new MBTiles(filename);
+    const mbtiles = new MBTiles(tileset, filename);
     memCache.set(tileset, mbtiles);
     return mbtiles;
   }
