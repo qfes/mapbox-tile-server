@@ -40,7 +40,6 @@ module.exports = (env, { mode }) => {
     devtool: mode === "development" && "source-map",
     optimization: {
       minimize: mode === "production",
-    },
-    plugins: [new ZipPlugin({ filename: "mapbox-tile-server.zip" })],
+    }
   };
 };

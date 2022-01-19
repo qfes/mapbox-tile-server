@@ -1,9 +1,12 @@
+## Get the SAM CLI if you don't have it
+
+```
+wget https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+```
+
 ## Development environment
 
-The target environment on AWS is `nodejs12.x` on `linux x64`. The build environment must be compatible with the target environment. Ubuntu 20.04 on WSL2 with nodejs12.x is compatible.
-
-`AWS CLI v2` is also required for deploying the built lambda package to aws. This utility is called via
-`npm run deploy`.
+The target environment on AWS is `nodejs14.x` on `linux x64`. The build environment must be compatible with the target environment. Ubuntu 20.04 on WSL2 with nodejs14.x is compatible.
 
 ### Installing node dependencies
 
@@ -13,24 +16,58 @@ Node dependencies are managed via npm. Node bindings should be compiled after in
 npm install
 ```
 
-### Building distribution package
+## Build
 
-Source build and bundle is handled via typescript and webpack. The build scripts build the source typescript and bundle any dependencies in `./dist/index.js`. Unused code isn't bundled.
-
-Node bindings are written to `./dist/[binding-name].[ext]`.
-
-For development builds, source-maps are written to `./dist/index.js.map`.
-
-```bash
+```
 npm run build
-# or dev environment
-# npm run build:dev
+sudo -E sam build
 ```
 
-### Deploy built function to AWS
+### Testing
 
-Deployment requires the AWS CLI v2 and sufficient credentials to update lambda functions. See [aws_credentials](https://github.com/qfes/aws_credentials).
+Once the config is built, events can be passed to the function using the `sam invoke` interface:
 
-```bash
-npm run deploy
+#### Test a tile request
 ```
+sam local invoke MapboxTileServerFunction --event events/tile_event.json
+```
+
+#### Test a tile json request
+
+```
+sam local invoke MapboxTileServerFunction --event events/tile_event.json
+```
+
+#### Test interactively
+
+You can start a server you can fire custom requests to via curl or a browser with:
+
+```
+sam local start-api
+```
+
+### Debugging
+
+`debugger;` statements can be placed in typescript code and compiled to JS. The SAM build needs to be called as well:
+
+```
+npm run build:dev
+sudo sam -E build
+```
+
+Test an event with a debugger listening on port 5555:
+
+```
+sam local invoke MapboxTileServerFunction --event events/tile_event.json -d 5555
+```
+
+Attach the VSCode debugger by running the debug config for `"Attach to SAM CLI"`.
+
+You can also run an event and attach debugger in one with the debug configs:
+
+  * `"Debug Mapbox Tile Server json request"`
+  * `"Debug Mapbox Tile Server vector tile request"`
+
+## Deploying to AWS
+
+TODO
