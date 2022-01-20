@@ -34,15 +34,17 @@ Resources:
 
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # ServerlessRestApi is an implicit HttpAPI created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  # https://github.com/aws/serverless-application-model/blob/master/docs/internals/generated_resources.rst#http-api
   MapboxTileServerApi:
     Description: "API Gateway endpoint URL for Prod stage for Mapbox Tile Server"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
   MapboxTileSeverFunction:
     Description: "Mapbox Tile Server Function ARN"
-    Value: !GetAtt mapbox-tile-server.Arn
+    Value: !GetAtt MapboxTileServerFunction.Arn 
+    # This is the function defined above
   MapBoxTileServerFunctionIamRole:
     Description: "Implicit IAM Role created for Mapbox Tile Server function"
-    Value: !GetAtt mapbox-tile-server-role.Arn
+    Value: !GetAtt MapboxTileServerFunctionRole.Arn
+    # This is implicitly created
