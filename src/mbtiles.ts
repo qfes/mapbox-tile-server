@@ -1,14 +1,17 @@
-import { existsSync, createWriteStream, unlinkSync } from "fs";
+import { unlinkSync, statSync, writeFile, readdirSync } from "fs";
 import { promisify } from "util";
 import stream from "stream";
-import S3 from "aws-sdk/clients/s3";
+import { S3, S3Client } from "@aws-sdk/client-s3";
+import {join} from "path";
 import Database, { Database as DbConnection, Statement } from "better-sqlite3";
 
 const pipeline = promisify(stream.pipeline);
 
-const s3 = new S3();
+const s3 = new S3({});
 const bucket = process.env.BUCKET ?? "qfes-mapbox-tiles";
 const endpoints = process.env.ENDPOINTS ?? "";
+const TMP_DISK_SIZE_MB = 500 // 500mb limit
+const TMP_DISK_PATH = "/tmp"
 
 const GET_INFO = "SELECT * FROM metadata";
 const GET_TILE =
@@ -95,11 +98,8 @@ export class MBTiles {
     }
 
     const s3Key = `${tileset}.mbtiles`;
-    const filename = `/tmp/${s3Key}`;
 
-    if (!existsSync(filename)) {
-      await downloadTiles(s3Key, filename);
-    }
+    const filename = await stashTiles(s3Key);
 
     const mbtiles = new MBTiles(tileset, filename);
     memCache.set(tileset, mbtiles);
@@ -115,12 +115,70 @@ export class MBTiles {
  */
 async function downloadTiles(key: string, filename: string) {
   try {
-    await pipeline(
-      s3.getObject({ Bucket: bucket, Key: key }).createReadStream(),
-      createWriteStream(filename)
-    );
+    const tileData = await s3.getObject({ Bucket: bucket, Key: key })
+    writeFile(filename, tileData.Body, 
+      (err) => {
+        throw(`an error occurred writing ${key}.`)
+    });
   } catch (err) {
     unlinkSync(filename);
+    throw err;
+  }
+
+  return filename;
+}
+
+// Get size of object
+// Get size of tmp
+// If object exceeds volumne of tmp error
+// If object fits in free space of tmp all good
+/**
+ * Check the size of tiles from s3 and rotate the temp storage if necessary before downloading.
+ *
+ * @param key the s3 key
+ **/
+async function stashTiles(key: string): Promise<string> {
+
+  const filename = join(TMP_DISK_PATH, key);
+  try {
+    const headObjectReq = await s3.headObject({ Bucket: bucket, Key: key });
+    const tileFileSizeMB = 
+      headObjectReq.ContentLength? headObjectReq.ContentLength * 1024 * 1024 : 0;
+    if (tileFileSizeMB > TMP_DISK_SIZE_MB) {
+      throw(`mbtiles file exceeded maximum size: ${tileFileSizeMB} > ${TMP_DISK_SIZE_MB}`);
+    }
+
+    // an array of files in temp sorted by least recently accessed
+    const tmpFiles = readdirSync(TMP_DISK_PATH).
+      map((file) => { 
+        const fileStats = statSync(file);
+        return { filename: file, size: fileStats.size, accessed: fileStats.atime }
+      }).
+      sort((file1, file2) => (file1.accessed < file2.accessed)? -1 : 1)
+  
+    const consumedTemp = 
+      tmpFiles.
+      reduce((total, file) => total + file.size, 0)
+    
+    if (consumedTemp + tileFileSizeMB > TMP_DISK_SIZE_MB) {
+      // We need to make space for the incoming tiles
+      const needToFree = (consumedTemp + tileFileSizeMB) - TMP_DISK_SIZE_MB;
+      tmpFiles.
+        reduce((targetToFree, file) => {
+          if (targetToFree <= 0) {
+            //do nothing
+            return targetToFree
+          }
+          // free some space
+            unlinkSync(file.filename);
+            return targetToFree - file.size;
+          },
+          needToFree)
+    }
+    // guaranteed to be enough space for the new tiles
+    downloadTiles(key, filename)
+  } catch (err) {
+    debugger;
     throw err;
   }
 

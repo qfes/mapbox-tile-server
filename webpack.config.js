@@ -1,5 +1,4 @@
 const { resolve } = require("path");
-const ZipPlugin = require("zip-webpack-plugin");
 
 module.exports = (env, { mode }) => {
   process.env.NODE_ENV = mode;

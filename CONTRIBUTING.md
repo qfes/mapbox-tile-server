@@ -52,7 +52,7 @@ sam local start-api
 
 ```
 npm run build:dev
-sudo sam -E build
+sudo -E sam build
 ```
 
 Test an event with a debugger listening on port 5555:
