@@ -128,10 +128,6 @@ async function downloadTiles(key: string, filename: string) {
   return filename;
 }
 
-// Get size of object
-// Get size of tmp
-// If object exceeds volumne of tmp error
-// If object fits in free space of tmp all good
 /**
  * Check the size of tiles from s3 and rotate the temp storage if necessary before downloading.
  *
@@ -143,7 +139,7 @@ async function stashTiles(key: string): Promise<string> {
   try {
     const headObjectReq = await s3.headObject({ Bucket: bucket, Key: key });
     const tileFileSizeMB = 
-      headObjectReq.ContentLength? headObjectReq.ContentLength * 1024 * 1024 : 0;
+      headObjectReq.ContentLength? headObjectReq.ContentLength / (1024 * 1024) : 0;
     if (tileFileSizeMB > TMP_DISK_SIZE_MB) {
       throw(`mbtiles file exceeded maximum size: ${tileFileSizeMB} > ${TMP_DISK_SIZE_MB}`);
     }
@@ -159,14 +155,14 @@ async function stashTiles(key: string): Promise<string> {
     const consumedTemp = 
       tmpFiles.
       reduce((total, file) => total + file.size, 0)
-    
+    debugger;
     if (consumedTemp + tileFileSizeMB > TMP_DISK_SIZE_MB) {
       // We need to make space for the incoming tiles
       const needToFree = (consumedTemp + tileFileSizeMB) - TMP_DISK_SIZE_MB;
       tmpFiles.
         reduce((targetToFree, file) => {
           if (targetToFree <= 0) {
-            //do nothing
+            // do nothing
             return targetToFree
           }
           // free some space
