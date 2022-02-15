@@ -1,9 +1,10 @@
-import { unlinkSync, statSync, writeFile, readdirSync } from "fs";
+import { unlinkSync, statSync, readdirSync, createWriteStream } from "fs";
+import stream, { Readable } from "stream";
 import { promisify } from "util";
-import stream from "stream";
-import { S3, S3Client } from "@aws-sdk/client-s3";
-import {join} from "path";
+import { S3 } from "@aws-sdk/client-s3";
+import { join } from "path";
 import Database, { Database as DbConnection, Statement } from "better-sqlite3";
+import { debug } from "console";
 
 const pipeline = promisify(stream.pipeline);
 
@@ -100,9 +101,14 @@ export class MBTiles {
     const s3Key = `${tileset}.mbtiles`;
 
     const filename = await stashTiles(s3Key);
-
-    const mbtiles = new MBTiles(tileset, filename);
-    memCache.set(tileset, mbtiles);
+    var mbtiles;
+    try {
+      mbtiles = new MBTiles(tileset, filename);
+      memCache.set(tileset, mbtiles);
+    } catch (err) {
+      debugger;
+      throw(err)
+    }
     return mbtiles;
   }
 }
@@ -116,11 +122,10 @@ export class MBTiles {
 async function downloadTiles(key: string, filename: string) {
   try {
     const tileData = await s3.getObject({ Bucket: bucket, Key: key })
-    writeFile(filename, tileData.Body, 
-      (err) => {
-        throw(`an error occurred writing ${key}.`)
-    });
+    debugger;
+    await pipeline((tileData.Body as Readable), createWriteStream(filename)) 
   } catch (err) {
+    debugger;
     unlinkSync(filename);
     throw err;
   }
@@ -155,7 +160,6 @@ async function stashTiles(key: string): Promise<string> {
     const consumedTemp = 
       tmpFiles.
       reduce((total, file) => total + file.size, 0)
-    debugger;
     if (consumedTemp + tileFileSizeMB > TMP_DISK_SIZE_MB) {
       // We need to make space for the incoming tiles
       const needToFree = (consumedTemp + tileFileSizeMB) - TMP_DISK_SIZE_MB;
@@ -171,12 +175,12 @@ async function stashTiles(key: string): Promise<string> {
           },
           needToFree)
     }
-    // guaranteed to be enough space for the new tiles
-    downloadTiles(key, filename)
+    // Now guaranteed to be enough space for the new tiles
+
   } catch (err) {
     debugger;
     throw err;
   }
 
-  return filename;
+  return downloadTiles(key, filename);
 }
