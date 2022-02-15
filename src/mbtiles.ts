@@ -100,7 +100,7 @@ export class MBTiles {
 
     const s3Key = `${tileset}.mbtiles`;
 
-    const filename = await stashTiles(s3Key);
+    const filename = await downloadTiles(s3Key);
     var mbtiles;
     try {
       mbtiles = new MBTiles(tileset, filename);
@@ -119,11 +119,20 @@ export class MBTiles {
  * @param key the s3 key
  * @param filename the target filename
  */
-async function downloadTiles(key: string, filename: string) {
+async function downloadTiles(key: string) {
+  const filename = join(TMP_DISK_PATH, key);
   try {
     const tileData = await s3.getObject({ Bucket: bucket, Key: key })
-    debugger;
-    await pipeline((tileData.Body as Readable), createWriteStream(filename)) 
+
+    const tileFileSizeMB = tileData.ContentLength? tileData.ContentLength / (1024 * 1024) : 0;   
+    if (tileFileSizeMB > TMP_DISK_SIZE_MB) {
+      throw(`mbtiles file exceeded maximum size: ${tileFileSizeMB} > ${TMP_DISK_SIZE_MB}`);
+    }
+    // make space for .mbtiles if possible/needed
+    rotateTempStorage(tileFileSizeMB);
+
+    // write the file
+    await pipeline((tileData.Body as Readable), createWriteStream(filename));
   } catch (err) {
     debugger;
     unlinkSync(filename);
@@ -134,21 +143,14 @@ async function downloadTiles(key: string, filename: string) {
 }
 
 /**
- * Check the size of tiles from s3 and rotate the temp storage if necessary before downloading.
+ * Make space in temporary storage for incomming .mbtiles
+ * 
+ * Removing existing files in order of least most recently accessed.
  *
- * @param key the s3 key
- **/
-async function stashTiles(key: string): Promise<string> {
-
-  const filename = join(TMP_DISK_PATH, key);
+ * @param incommingFileSizeMB the file size in MB that needs to be free on temp storage.
+ */
+async function rotateTempStorage(incommingFileSizeMB: number) {
   try {
-    const headObjectReq = await s3.headObject({ Bucket: bucket, Key: key });
-    const tileFileSizeMB = 
-      headObjectReq.ContentLength? headObjectReq.ContentLength / (1024 * 1024) : 0;
-    if (tileFileSizeMB > TMP_DISK_SIZE_MB) {
-      throw(`mbtiles file exceeded maximum size: ${tileFileSizeMB} > ${TMP_DISK_SIZE_MB}`);
-    }
-
     // an array of files in temp sorted by least recently accessed
     const tmpFiles = readdirSync(TMP_DISK_PATH).
       map((file) => { 
@@ -160,9 +162,10 @@ async function stashTiles(key: string): Promise<string> {
     const consumedTemp = 
       tmpFiles.
       reduce((total, file) => total + file.size, 0)
-    if (consumedTemp + tileFileSizeMB > TMP_DISK_SIZE_MB) {
+ 
+    if (consumedTemp + incommingFileSizeMB > TMP_DISK_SIZE_MB) {
       // We need to make space for the incoming tiles
-      const needToFree = (consumedTemp + tileFileSizeMB) - TMP_DISK_SIZE_MB;
+      const needToFree = (consumedTemp + incommingFileSizeMB) - TMP_DISK_SIZE_MB;
       tmpFiles.
         reduce((targetToFree, file) => {
           if (targetToFree <= 0) {
@@ -175,12 +178,8 @@ async function stashTiles(key: string): Promise<string> {
           },
           needToFree)
     }
-    // Now guaranteed to be enough space for the new tiles
-
   } catch (err) {
-    debugger;
-    throw err;
+    throw("Error rotating .mbtiles files in temp storage.")
   }
-
-  return downloadTiles(key, filename);
 }
+
