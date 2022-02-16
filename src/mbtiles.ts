@@ -1,15 +1,13 @@
-import { unlinkSync, statSync, readdirSync, createWriteStream } from "fs";
+import { unlinkSync, statSync, readdirSync, createWriteStream, fstat, existsSync } from "fs";
 import stream, { Readable } from "stream";
 import { promisify } from "util";
-import { S3 } from "@aws-sdk/client-s3";
 import { join } from "path";
 import Database, { Database as DbConnection, Statement } from "better-sqlite3";
 import { debug } from "console";
+import { s3, bucket, TileSource, TileJson } from "./tilesource";
 
 const pipeline = promisify(stream.pipeline);
 
-const s3 = new S3({});
-const bucket = process.env.BUCKET ?? "qfes-mapbox-tiles";
 const endpoints = process.env.ENDPOINTS ?? "";
 const TMP_DISK_SIZE_MB = 500 // 500mb limit
 const TMP_DISK_PATH = "/tmp"
@@ -18,19 +16,35 @@ const GET_INFO = "SELECT * FROM metadata";
 const GET_TILE =
   "SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?";
 
-const memCache = new Map<string, MBTiles>();
 
-export class MBTiles {
-  private readonly _db: DbConnection;
-  private readonly _tileStmt: Statement;
+export class MBTiles implements TileSource{
+  private _db: DbConnection;
+  private _tileStmt: Statement;
 
   /**
    * Construct an mbtiles instance
    * @param filename database filename
    */
-  constructor(public readonly id: string, filename: string) {
-    this._db = Database(filename, { readonly: true, fileMustExist: true });
-    this._tileStmt = this._db.prepare(GET_TILE).raw().pluck();
+  private constructor(public readonly id: string, filename: string) {
+        this._db = Database(filename, { readonly: true, fileMustExist: true });
+        this._tileStmt = this._db.prepare(GET_TILE).raw().pluck();
+  }
+
+  /**
+   * create an MBTiles object
+   * @param tileset the name of the tileset
+   */
+  static async create(tileset: string) {
+    const s3Key = `${tileset}.mbtiles`;
+    const filename = await downloadTiles(s3Key);
+    var mbtiles;
+    try {
+      mbtiles = new MBTiles(tileset, filename);
+    } catch (err) {
+      debugger;
+      throw(err);
+    }
+    return mbtiles;
   }
 
   /**
@@ -88,29 +102,17 @@ export class MBTiles {
     return tile;
   }
 
-  /**
-   * Open an mbtiles database
-   * @param tileset the name of the tileset
-   */
-  static async open(tileset: string) {
-    // get db from memory cache
-    if (memCache.has(tileset)) {
-      return memCache.get(tileset)!;
-    }
-
+  public static async canOpen(tileset: string): Promise<boolean> {
     const s3Key = `${tileset}.mbtiles`;
-
-    const filename = await downloadTiles(s3Key);
-    var mbtiles;
     try {
-      mbtiles = new MBTiles(tileset, filename);
-      memCache.set(tileset, mbtiles);
-    } catch (err) {
-      debugger;
-      throw(err)
+      const tileMetadata = await s3.headObject({ Bucket: bucket, Key: s3Key } );
+      return tileMetadata.$metadata.httpStatusCode === 200;
+    } catch {
+      return false;
     }
-    return mbtiles;
   }
+
+  
 }
 
 /**
@@ -157,11 +159,11 @@ async function rotateTempStorage(incommingFileSizeMB: number) {
         const fileStats = statSync(file);
         return { filename: file, size: fileStats.size, accessed: fileStats.atime }
       }).
-      sort((file1, file2) => (file1.accessed < file2.accessed)? -1 : 1)
+      sort((file1, file2) => (file1.accessed < file2.accessed)? -1 : 1);
   
     const consumedTemp = 
       tmpFiles.
-      reduce((total, file) => total + file.size, 0)
+      reduce((total, file) => total + file.size, 0);
  
     if (consumedTemp + incommingFileSizeMB > TMP_DISK_SIZE_MB) {
       // We need to make space for the incoming tiles
@@ -170,16 +172,16 @@ async function rotateTempStorage(incommingFileSizeMB: number) {
         reduce((targetToFree, file) => {
           if (targetToFree <= 0) {
             // do nothing
-            return targetToFree
+            return targetToFree;
           }
           // free some space
             unlinkSync(file.filename);
             return targetToFree - file.size;
           },
-          needToFree)
+          needToFree);
     }
   } catch (err) {
-    throw("Error rotating .mbtiles files in temp storage.")
+    throw("Error rotating .mbtiles files in temp storage.");
   }
 }
 
