@@ -4,11 +4,10 @@ import { promisify } from "util";
 import { join } from "path";
 import Database, { Database as DbConnection, Statement } from "better-sqlite3";
 import { debug } from "console";
-import { s3, bucket, TileSource, TileJson } from "./tilesource";
+import { s3, bucket, TileSource, TileJson, generateTileJSON } from "./tilesource";
 
 const pipeline = promisify(stream.pipeline);
 
-const endpoints = process.env.ENDPOINTS ?? "";
 const TMP_DISK_SIZE_MB = 500 // 500mb limit
 const TMP_DISK_PATH = "/tmp"
 
@@ -37,7 +36,7 @@ export class MBTiles implements TileSource{
   static async create(tileset: string) {
     const s3Key = `${tileset}.mbtiles`;
     const filename = await downloadTiles(s3Key);
-    var mbtiles;
+    let mbtiles;
     try {
       mbtiles = new MBTiles(tileset, filename);
     } catch (err) {
@@ -53,35 +52,9 @@ export class MBTiles implements TileSource{
   getInfo() {
     const stmt = this._db.prepare(GET_INFO);
     const rows = stmt.all();
-
-    const info: Record<string, any> = {};
-    for (const { name, value } of rows) {
-      switch (name) {
-        case "json":
-          const json = JSON.parse(value);
-          Object.assign(info, json);
-          break;
-        case "minzoom":
-        case "maxzoom":
-          info[name] = parseInt(value, 10);
-          break;
-        case "center":
-        case "bounds":
-          info[name] = value.split(",").map(parseFloat);
-          break;
-        default:
-          info[name] = value;
-          break;
-      }
-    }
-
-    return {
-      ...info,
-      id: this.id,
-      tilejson: "2.2.0",
-      scheme: "xyz",
-      tiles: endpoints.split(",").map((endpoint) => `https://${endpoint}/${this.id}/{z}/{x}/{y}.vector.pbf`),
-    };
+    const metadataObject = Object.assign({}, ...rows);
+    
+    return generateTileJSON(this.id, metadataObject);
   }
 
   /**
