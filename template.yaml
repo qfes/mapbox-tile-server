@@ -10,6 +10,16 @@ Globals:
   Function:
     Timeout: 3
 
+Parameters: 
+  tilebucket:
+    Default: "qfes-mapbox-tiles"
+    Description: "The bucket to fetch tiles from"
+    Type: "String"
+    AllowedValues:
+      - "qfes-mapbox-tiles"
+      - "qfes-mapbox-tiles-test"
+    
+
 Resources:
   MapboxTileServerFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -29,8 +39,14 @@ Resources:
             # No path or method should give us a default function that handles all calls
       Policies:
         - S3ReadPolicy:
-            BucketName: "qfes-mapbox-tiles"
-
+            BucketName:
+              Ref: tilebucket
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: true
+          BUCKET: 
+            Ref: tilebucket
+          ENDPOINTS: b.tiles.qfesanalytics.com,tiles.qfesanalytics.com
 
 
 Outputs:

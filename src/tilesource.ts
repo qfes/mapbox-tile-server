@@ -1,5 +1,6 @@
 import { S3 } from "@aws-sdk/client-s3";
 const endpoints = process.env.ENDPOINTS ?? "";
+export const bucket = process.env.BUCKET ?? "qfes-mapbox-tiles";
 
 export interface TileSource {
         getInfo(): TileJson;
@@ -30,7 +31,6 @@ export interface metadataJSON {
 }
 
 export const s3 = new S3({});
-export const bucket = process.env.BUCKET ?? "qfes-mapbox-tiles";
 
 export function generateTileJSON(id: string, metadata: metadataJSON) {
     const info: Record<string, any> = {};
