@@ -4,7 +4,7 @@ import { promisify } from "util";
 import { join } from "path";
 import Database, { Database as DbConnection, Statement } from "better-sqlite3";
 import { debug } from "console";
-import { s3, bucket, TileSource, TileJson, generateTileJSON } from "./tilesource";
+import { s3, bucket, TileSource, generateTileJSON } from "./tilesource";
 
 const pipeline = promisify(stream.pipeline);
 
@@ -40,7 +40,6 @@ export class MBTiles implements TileSource{
     try {
       mbtiles = new MBTiles(tileset, filename);
     } catch (err) {
-      debugger;
       throw(err);
     }
     return mbtiles;
@@ -64,7 +63,7 @@ export class MBTiles implements TileSource{
    * @param x tile x coordinate
    * @param y tile y coordinate
    */
-  getTile(z: number, x: number, y: number) {
+  async getTile(z: number, x: number, y: number) {
     // flip y coordinate
     y = (1 << z) - 1 - y;
     const tile = this._tileStmt.get(z, x, y);
@@ -109,7 +108,6 @@ async function downloadTiles(key: string) {
     // write the file
     await pipeline((tileData.Body as Readable), createWriteStream(filename));
   } catch (err) {
-    debugger;
     unlinkSync(filename);
     throw err;
   }

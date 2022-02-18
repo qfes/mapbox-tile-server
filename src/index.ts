@@ -1,6 +1,6 @@
 import { forbidden, noContent, ok } from "./response";
-import { MBTiles } from "./mbtiles";
 import { Router } from "./router";
+import * as TileProvider from "./tileprovider";
 const router = new Router();
 
 /**
@@ -25,7 +25,7 @@ router.use((response) => {
  */
 router.get("/:tileset.json", async ({ tileset }) => {
   try {
-    const mbtiles = await MBTiles.open(tileset);
+    const mbtiles = await TileProvider.open(tileset);
     const info = mbtiles.getInfo();
     return ok(info);
   } catch {
@@ -38,7 +38,7 @@ router.get("/:tileset.json", async ({ tileset }) => {
  */
 router.get("/:tileset/:z/:x/:y.vector.pbf", async ({ tileset, z, x, y }) => {
   try {
-    const mbtiles = await MBTiles.open(tileset);
+    const mbtiles = await TileProvider.open(tileset);
     const tile = mbtiles.getTile(Number(z), Number(x), Number(y));
 
     return tile != null ? ok(tile) : noContent();

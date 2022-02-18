@@ -1,11 +1,9 @@
-import { MBTiles } from "./mbtiles";
-import { DirectoryTiles } from "./directorytiles"
 import { S3 } from "@aws-sdk/client-s3";
 const endpoints = process.env.ENDPOINTS ?? "";
 
 export interface TileSource {
         getInfo(): TileJson;
-        getTile(z: number, x: number, y: number): Buffer;
+        getTile(z: number, x: number, y: number): Promise<Buffer | null>;
 }
 
 export interface TileJson {
@@ -34,43 +32,6 @@ export interface metadataJSON {
 export const s3 = new S3({});
 export const bucket = process.env.BUCKET ?? "qfes-mapbox-tiles";
 
-class TileProvider {
-
-  private static memCache: Map<string, TileSource>;
-  private static instance: TileProvider;
-
-  private constructor() {
-    TileProvider.memCache = new Map<string, TileSource>();
-  };
-
-  public static getInstance(): TileProvider {
-    if (!TileProvider.instance) {
-      TileProvider.instance = new TileProvider();
-    }
-
-    return TileProvider.instance;
-  }
-
-  async open(tileset: string) {
-    // get db from memory cache
-    if (TileProvider.memCache.has(tileset)) {
-      return TileProvider.memCache.get(tileset);
-    } 
-    let tileSource: TileSource;
-    if (await MBTiles.canOpen(tileset)) {
-      tileSource = await MBTiles.create(tileset);
-    } else if (await DirectoryTiles.canOpen(tileset)) {
-      tileSource = await DirectoryTiles.create(tileset);
-    } else {
-      throw(`Unrecognised tileset format: ${tileset}`)
-    }
-
-    TileProvider.memCache.set(tileset, tileSource)
-    return tileSource;
-  }
-
-}
-
 export function generateTileJSON(id: string, metadata: metadataJSON) {
     const info: Record<string, any> = {};
     for (const [name, value] of Object.entries(metadata)) {
@@ -98,6 +59,6 @@ export function generateTileJSON(id: string, metadata: metadataJSON) {
       id: id,
       tilejson: "2.2.0",
       scheme: "xyz",
-      tiles: endpoints.split(",").map((endpoint) => `https://${endpoint}/${this.id}/{z}/{x}/{y}.vector.pbf`),
+      tiles: endpoints.split(",").map((endpoint) => `https://${endpoint}/${id}/{z}/{x}/{y}.vector.pbf`),
     };
 }

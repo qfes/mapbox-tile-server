@@ -1,4 +1,3 @@
-import { pipeline } from "stream";
 import { TileSource, s3, bucket, metadataJSON, generateTileJSON } from "./tilesource";
 import { join } from "path";
 
@@ -34,13 +33,22 @@ export class DirectoryTiles implements TileSource {
     return generateTileJSON(this.id, this.metadata);
   }
 
-  public getTile(z: number, x: number, y: number) {
+  public async getTile(z: number, x: number, y: number) {
     // flip y coordinate
     y = (1 << z) - 1 - y;
     const tileKey = join(this.id, z.toString(), x.toString(),`${y}.pbf`)
+    
+    let tile: Buffer | null;
+    try {
+      const tileData = await s3.getObject({ Bucket: bucket, Key: tileKey });
+      tile = tileData.Body.read();
+      return tile;
+    } catch {
+      tile = null;
+      return tile;
+    }
 
-    const tile = await s3.getObject({ Bucket: bucket, Key: tileKey });
-    return tile.Body.read();
+
   }
 
 }
