@@ -44,7 +44,7 @@ Resources:
       Environment:
         Variables:
           AWS_NODEJS_CONNECTION_REUSE_ENABLED: true
-          BUCKET: 
+          BUCKET:
             Ref: tilebucket
           ENDPOINTS: b.tiles.qfesanalytics.com,tiles.qfesanalytics.com
 

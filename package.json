@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build:dev": "webpack --mode development",
+    "build:test": "scripts/test.sh",
     "build": "webpack --mode production",
     "watch": "webpack watch --mode production",
     "deploy": "scripts/deploy.sh",

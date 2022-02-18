@@ -25,8 +25,8 @@ router.use((response) => {
  */
 router.get("/:tileset.json", async ({ tileset }) => {
   try {
-    const mbtiles = await TileProvider.open(tileset);
-    const info = mbtiles.getInfo();
+    const tiles = await TileProvider.open(tileset);
+    const info = tiles.getInfo();
     return ok(info);
   } catch {
     return forbidden();
@@ -38,8 +38,8 @@ router.get("/:tileset.json", async ({ tileset }) => {
  */
 router.get("/:tileset/:z/:x/:y.vector.pbf", async ({ tileset, z, x, y }) => {
   try {
-    const mbtiles = await TileProvider.open(tileset);
-    const tile = mbtiles.getTile(Number(z), Number(x), Number(y));
+    const tiles = await TileProvider.open(tileset);
+    const tile = await tiles.getTile(Number(z), Number(x), Number(y));
 
     return tile != null ? ok(tile) : noContent();
   } catch {
