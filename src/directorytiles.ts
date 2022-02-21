@@ -14,6 +14,7 @@ export class DirectoryTiles implements TileSource {
   public static async canOpen(tileset: string ): Promise<boolean> {
     const s3Key = join(tileset,"metadata.json");
     try {
+      debugger;
       const tileMetadata = await s3.headObject({ Bucket: bucket, Key: s3Key } );
       return tileMetadata.$metadata.httpStatusCode === 200;
     } catch (err) {
@@ -22,6 +23,7 @@ export class DirectoryTiles implements TileSource {
   }
 
   public static async create(tileset: string) {
+    debugger;
     const s3Key = join(tileset, "metadata.json");
     const metadataJSON = await fetchMetadataJSON(s3Key);
     let directoryTiles;
@@ -53,18 +55,21 @@ export class DirectoryTiles implements TileSource {
 }
 
 async function fetchMetadataJSON(key: string) {
-  let metadata;
+  let metadataJSON;
   try {
-    const metadataJSON = await s3.getObject({ Bucket: bucket, Key: key});
-    if (!metadataJSON.Body) {
+    const metadata = await s3.getObject({ Bucket: bucket, Key: key});
+    if (!metadata.Body) {
       throw("No content returned for s3 object: ${key}")
     }
-    metadata = JSON.parse(metadataJSON.Body.read()); // bit loose?
+    const metadataBody = await stream2buffer(metadata.Body);
+    metadataJSON = JSON.parse(metadataBody.toString());
+    debugger;
+
   } catch(err) {
     throw(err)
   }
 
-  return metadata;
+  return metadataJSON;
 }
 
 async function stream2buffer(stream: Stream): Promise<Buffer> {

@@ -1,3 +1,3 @@
 webpack --mode development
-sam build --parameter-overrides 'tilebucket="qfes-mapbox-tiles-test"'
-sam local start-api
+sam build
+ts-node node_modules/tape/bin/tape tests/dirtiles.test.ts

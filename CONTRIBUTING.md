@@ -68,6 +68,10 @@ You can also run an event and attach debugger in one with the debug configs:
   * `"Debug Mapbox Tile Server json request"`
   * `"Debug Mapbox Tile Server vector tile request"`
 
+## Automated Tests
+
+Are written in Typescript, and use the Tape testing framework. `ts-node` is required to run the tests.
+
 ## Deploying to AWS
 
 TODO

@@ -16,11 +16,13 @@ export async function open(tileset: string) {
     if (await MBTiles.canOpen(tileset)) {
       tileSource = await MBTiles.create(tileset);
     } else if (await DirectoryTiles.canOpen(tileset)) {
+      debugger;
       tileSource = await DirectoryTiles.create(tileset);
     } else {
       throw(`Unrecognised tileset format: ${tileset}`)
     }
 
+    debugger;
     memCache.set(tileset, tileSource)
     return tileSource;
   }

@@ -86,7 +86,7 @@ export class MBTiles implements TileSource{
 
   
 }
-
+ 
 /**
  * Download mbtiles from s3
  *
