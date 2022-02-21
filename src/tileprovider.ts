@@ -1,6 +1,7 @@
 import { MBTiles } from "./mbtiles";
 import { DirectoryTiles } from "./directorytiles";
 import { TileSource } from "./tilesource";
+import { RequestProgress } from "@aws-sdk/client-s3";
 
 const memCache = new Map<string, TileSource>();
 
@@ -25,3 +26,7 @@ export async function open(tileset: string) {
   }
 
 
+export function isNotFound(errorMessage: string) {
+  const regex = new RegExp("^Unrecognised\\stileset.*");
+  return regex.test(errorMessage);
+}

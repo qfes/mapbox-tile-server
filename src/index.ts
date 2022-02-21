@@ -1,4 +1,4 @@
-import { forbidden, noContent, ok } from "./response";
+import { forbidden, noContent, ok, notFound } from "./response";
 import { Router } from "./router";
 import * as TileProvider from "./tileprovider";
 const router = new Router();
@@ -28,7 +28,10 @@ router.get("/:tileset.json", async ({ tileset }) => {
     const tiles = await TileProvider.open(tileset);
     const info = tiles.getInfo();
     return ok(info);
-  } catch {
+  } catch (err) {
+    if (typeof err === "string" && TileProvider.isNotFound(err)) {
+      return notFound();
+    }
     return forbidden();
   }
 });
@@ -42,7 +45,7 @@ router.get("/:tileset/:z/:x/:y.vector.pbf", async ({ tileset, z, x, y }) => {
     const tile = await tiles.getTile(Number(z), Number(x), Number(y));
 
     return tile != null ? ok(tile) : noContent();
-  } catch {
+  } catch (err) {
     return forbidden();
   }
 });
