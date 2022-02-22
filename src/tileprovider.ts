@@ -6,27 +6,26 @@ import { RequestProgress } from "@aws-sdk/client-s3";
 const memCache = new Map<string, TileSource>();
 
 export async function open(tileset: string) {
-    // get db from memory cache
-    if (memCache.has(tileset)) {
-      return memCache.get(tileset) as TileSource; 
-      // Typechecker thinks this can be undefined,
-      // Really it shouldn't be as we just checked it's there with has()
-    } 
-    let tileSource: TileSource;
-    if (await MBTiles.canOpen(tileset)) {
-      tileSource = await MBTiles.create(tileset);
-    } else if (await DirectoryTiles.canOpen(tileset)) {
-      debugger;
-      tileSource = await DirectoryTiles.create(tileset);
-    } else {
-      throw(`Unrecognised tileset format: ${tileset}`)
-    }
-
+  // get db from memory cache
+  if (memCache.has(tileset)) {
+    return memCache.get(tileset) as TileSource;
+    // Typechecker thinks this can be undefined,
+    // Really it shouldn't be as we just checked it's there with has()
+  }
+  let tileSource: TileSource;
+  if (await MBTiles.canOpen(tileset)) {
+    tileSource = await MBTiles.create(tileset);
+  } else if (await DirectoryTiles.canOpen(tileset)) {
     debugger;
-    memCache.set(tileset, tileSource)
-    return tileSource;
+    tileSource = await DirectoryTiles.create(tileset);
+  } else {
+    throw `Unrecognised tileset format: ${tileset}`;
   }
 
+  debugger;
+  memCache.set(tileset, tileSource);
+  return tileSource;
+}
 
 export function isNotFound(errorMessage: string) {
   const regex = new RegExp("^Unrecognised\\stileset.*");

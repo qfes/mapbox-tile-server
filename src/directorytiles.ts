@@ -2,8 +2,6 @@ import { TileSource, s3, bucket, metadataJSON, generateTileJSON } from "./tileso
 import { join } from "path";
 import { Stream } from "stream";
 
-
-
 export class DirectoryTiles implements TileSource {
   private metadata: metadataJSON;
 
@@ -11,11 +9,11 @@ export class DirectoryTiles implements TileSource {
     this.metadata = metadata;
   }
 
-  public static async canOpen(tileset: string ): Promise<boolean> {
-    const s3Key = join(tileset,"metadata.json");
+  public static async canOpen(tileset: string): Promise<boolean> {
+    const s3Key = join(tileset, "metadata.json");
     try {
       debugger;
-      const tileMetadata = await s3.headObject({ Bucket: bucket, Key: s3Key } );
+      const tileMetadata = await s3.headObject({ Bucket: bucket, Key: s3Key });
       return tileMetadata.$metadata.httpStatusCode === 200;
     } catch (err) {
       return false;
@@ -37,8 +35,8 @@ export class DirectoryTiles implements TileSource {
   }
 
   public async getTile(z: number, x: number, y: number) {
-    const tileKey = join(this.id, z.toString(), x.toString(),`${y}.pbf`)
-    
+    const tileKey = join(this.id, z.toString(), x.toString(), `${y}.pbf`);
+
     let tile: Buffer | null;
     try {
       debugger;
@@ -49,38 +47,32 @@ export class DirectoryTiles implements TileSource {
       tile = null;
       return tile;
     }
-
   }
-
 }
 
 async function fetchMetadataJSON(key: string) {
   let metadataJSON;
   try {
-    const metadata = await s3.getObject({ Bucket: bucket, Key: key});
+    const metadata = await s3.getObject({ Bucket: bucket, Key: key });
     if (!metadata.Body) {
-      throw("No content returned for s3 object: ${key}")
+      throw "No content returned for s3 object: ${key}";
     }
     const metadataBody = await stream2buffer(metadata.Body);
     metadataJSON = JSON.parse(metadataBody.toString());
     debugger;
-
-  } catch(err) {
-    throw(err)
+  } catch (err) {
+    throw err;
   }
 
   return metadataJSON;
 }
 
 async function stream2buffer(stream: Stream): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
+    const _buf = Array<any>();
 
-    return new Promise <Buffer> ((resolve, reject) => {
-        
-        const _buf = Array <any> ();
-
-        stream.on("data", (chunk) => _buf.push(chunk));
-        stream.on("end", () => resolve(Buffer.concat(_buf)));
-        stream.on("error", (err) => reject(`error converting stream - ${err}`));
-
-    });
-} 
+    stream.on("data", (chunk) => _buf.push(chunk));
+    stream.on("end", () => resolve(Buffer.concat(_buf)));
+    stream.on("error", (err) => reject(`error converting stream - ${err}`));
+  });
+}
