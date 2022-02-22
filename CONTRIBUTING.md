@@ -16,11 +16,16 @@ Node dependencies are managed via npm. Node bindings should be compiled after in
 npm install
 ```
 
+Running the tests or playing with code in a REPL uses the `ts-node` package
+
+```
+sudo -E npm install -g ts-node
+```
+
 ## Build
 
 ```
-npm run build
-sudo -E sam build
+sudo -E npm run build
 ```
 
 ### Testing
@@ -48,29 +53,34 @@ sam local start-api
 
 ### Debugging
 
-`debugger;` statements can be placed in typescript code and compiled to JS. The SAM build needs to be called as well:
+`debugger;` statements can be placed in typescript code and compiled to JS.
 
-```
-npm run build:dev
-sudo -E sam build
-```
 
 Test an event with a debugger listening on port 5555:
 
 ```
-sam local invoke MapboxTileServerFunction --event events/tile_event.json -d 5555
+sudo -E npm run debug
 ```
 
-Attach the VSCode debugger by running the debug config for `"Attach to SAM CLI"`.
+Which invokes `~/scripts/debug.sh` and contains the line:
 
-You can also run an event and attach debugger in one with the debug configs:
+```
+sam local invoke MapboxTileServerFunction --event events/tile_json_event_dir.json -d 5555 --parameter-overrides 'tilebucket="qfes-mapbox-tiles-test"'
+```
 
-  * `"Debug Mapbox Tile Server json request"`
-  * `"Debug Mapbox Tile Server vector tile request"`
+change the `--event` argument to another .json file to interactively debug a different event type.
+
+Once debug has been launched, attach the VSCode debugger by running the debug config for `"Attach to SAM CLI"`.
 
 ## Automated Tests
 
-Are written in Typescript, and use the Tape testing framework. `ts-node` is required to run the tests.
+Are written in Typescript, and use the Tape testing framework. A global install of `ts-node` is required to run the tests.
+
+To build config and Run tests:
+
+```
+sudo -E npm run test
+```
 
 ## Deploying to AWS
 
