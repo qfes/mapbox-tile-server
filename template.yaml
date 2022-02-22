@@ -18,6 +18,13 @@ Parameters:
     AllowedValues:
       - "qfes-mapbox-tiles"
       - "qfes-mapbox-tiles-test"
+  endpoints:
+    Default: "b.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
+    Description: "The endpoints to be returned to the tile requester (for sharding support)"
+    Type: "String"
+    AllowedValues:
+      - "b.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
+      - "test.tiles.qfesanalytics.com"
     
 
 Resources:
@@ -33,6 +40,8 @@ Resources:
       Events:
         TileRequest:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            ApiId: !Ref MapboxTileServerHttpApi # per https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-httpapi.html
           # Properties:
             # Path: /  
             # Method: get
@@ -46,16 +55,31 @@ Resources:
           AWS_NODEJS_CONNECTION_REUSE_ENABLED: true
           BUCKET:
             Ref: tilebucket
-          ENDPOINTS: b.tiles.qfesanalytics.com,tiles.qfesanalytics.com
+          ENDPOINTS:
+            Ref: endpoints
+
+
+  MapboxTileServerHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Domain: 
+        DomainName: test.tiles.qfesanalytics.com
+        CertificateArn: arn:aws:acm:ap-southeast-2:682936945876:certificate/2d9ce1da-a171-4451-9250-4afbe81df62e 
+        Route53:
+          HostedZoneId: Z07369202AZX5L101LI7T
 
 
 Outputs:
-  # ServerlessRestApi is an implicit HttpAPI created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/aws/serverless-application-model/blob/master/docs/internals/generated_resources.rst#http-api
-  MapboxTileServerApi:
-    Description: "API Gateway endpoint URL for Prod stage for Mapbox Tile Server"
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  # This is an optional section that creates references to these pieces of the app,
+  # since they may be useful to have handy for integrations with other things.
+  # Put in per recommendation of SAM examples.
+  MapboxTileServerHttpApiUrl:
+    Description: "URL for Mapbox Tile Server"
+    Value: !Sub "https://${MapboxTileServerHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+  MapboxTileServerHttpApiId:
+    Description: "Api Id for MapboxTileServerHttpApi"
+    Value:
+      Ref: MapboxTileServerHttpApi
   MapboxTileSeverFunction:
     Description: "Mapbox Tile Server Function ARN"
     Value: !GetAtt MapboxTileServerFunction.Arn 

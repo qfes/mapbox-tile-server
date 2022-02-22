@@ -10,7 +10,7 @@ export function testURLAgainstSnap(testContext: Test, url: string, snap: string)
     ["local", 
     "start-api", 
     "--parameter-overrides", 
-    "tilebucket=\"qfes-mapbox-tiles-test\""]);
+    "tilebucket=\"qfes-mapbox-tiles-test\",endpoints=\"test.tiles.qfesanalytics.com\""]);
 
   const snapType = extname(snap);
   let responseBody;

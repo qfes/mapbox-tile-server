@@ -4,11 +4,13 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "build:dev": "webpack --mode development",
-    "test": "scripts/test.sh",
     "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "build:sam": "./scripts/build_sam.sh",
+    "test": "scripts/test.sh",
     "watch": "webpack watch --mode production",
     "deploy": "scripts/deploy.sh",
+    "deploy:test": "scripts/deploy_test.sh",
     "debug": "scripts/debug.sh"
   },
   "dependencies": {
