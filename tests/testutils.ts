@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, extname } from "path";
 import { Test } from "tape";
 import { spawn } from "child_process";
 import { get } from "http";
@@ -12,15 +12,16 @@ export function testURLAgainstSnap(testContext: Test, url: string, snap: string)
     "--parameter-overrides", 
     "tilebucket=\"qfes-mapbox-tiles-test\""]);
 
-  let responseBody = '';
+  const snapType = extname(snap);
+  let responseBody;
   let responseHeader = get(url, (resp) => {
   const data: any[] = [];
   resp.on('data', (chunk) => data.push(chunk))
   resp.on('end', () => {
             apiThread.kill();
-            responseBody = data.concat().toString();
+            responseBody = Buffer.concat(data);
             testContext.deepEqual(
-                fs.readFileSync(snap).toString(),
+                fs.readFileSync(snap),
                 responseBody);
             testContext.end();
     });
@@ -32,7 +33,7 @@ export function tileURL(path: string) {
 }
  
 export function snapPath(path: string) {
-  return join("./tests/snaps/", "tiledir_json_res.json");
+  return join("./tests/snaps/", path);
 }
 
 export function makeSnap(url: string, snap: string) {
@@ -41,15 +42,16 @@ export function makeSnap(url: string, snap: string) {
     "start-api", 
     "--parameter-overrides", 
     "tilebucket=\"qfes-mapbox-tiles-test\""]);
-
+  const snapType = extname(snap);
   let responseBody;
   let responseHeader = get(url, (resp) => {
     const data: any[] = [];
     resp.on('data', (chunk) => data.push(chunk))
     resp.on('end', () => {
             apiThread.kill();
-            responseBody = Buffer.from(data.concat());
-            fs.writeFileSync(snap, JSON.parse(responseBody).toString());
+            responseBody = Buffer.concat(data);
+            fs.writeFileSync(snap, snapType === ".json"? responseBody.toString(): responseBody);
+            //if it's not .json it's likely .pbf, so don't toString binary.
     });
   });
 }
