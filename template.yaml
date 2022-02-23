@@ -25,7 +25,10 @@ Parameters:
     AllowedValues:
       - "b.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
       - "test.tiles.qfesanalytics.com"
-    
+  domainname:
+    Default: "test.tiles.qfesanalytics.com"
+    Description: "The domain name to be bound to the API"
+    Type: "String"
 
 Resources:
   MapboxTileServerFunction:
@@ -65,7 +68,8 @@ Resources:
     Type: AWS::Serverless::HttpApi
     Properties:
       Domain: 
-        DomainName: test.tiles.qfesanalytics.com
+        DomainName:
+          Ref: domainname
         CertificateArn: arn:aws:acm:ap-southeast-2:682936945876:certificate/2d9ce1da-a171-4451-9250-4afbe81df62e 
         Route53:
           HostedZoneId: Z07369202AZX5L101LI7T

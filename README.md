@@ -5,6 +5,8 @@ with [tippecanoe](https://github.com/mapbox/tippecanoe) from on S3. This server
 doesn't support raster tiles, nor _very large_ databases in `.mbtiles` format.
 Directories of tile files can be arbitrarily large.
 
+The AWS lamda service is defined using [AWS SAM](), which generates all the AWS elements necessary to run the service, with the exception of the domain name (optional).
+
 For `.mbtiles` databases: On first request for a given mbtiles tileset for a given lambda invocation, the mbtiles database is copied to `/tmp/` on the lambda instance. This storage location is limited to 512 MB. A full QLD road network isochrone mbtiles database is ~30 MB in size, so this limitation shouldn't be an issue for QLD specific databases.
 
 ## Usage
