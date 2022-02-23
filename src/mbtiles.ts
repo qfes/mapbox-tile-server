@@ -39,6 +39,7 @@ export class MBTiles implements TileSource {
     try {
       mbtiles = new MBTiles(tileset, filename);
     } catch (err) {
+      console.log(err);
       throw err;
     }
     return mbtiles;
@@ -100,12 +101,12 @@ async function downloadTiles(key: string) {
       throw `mbtiles file exceeded maximum size: ${tileFileSizeMB} > ${TMP_DISK_SIZE_MB}`;
     }
     // make space for .mbtiles if possible/needed
-    rotateTempStorage(tileFileSizeMB);
+    await rotateTempStorage(tileFileSizeMB);
 
     // write the file
     await pipeline(tileData.Body as Readable, createWriteStream(filename));
   } catch (err) {
-    unlinkSync(filename);
+    console.log(err);
     throw err;
   }
 
@@ -119,21 +120,26 @@ async function downloadTiles(key: string) {
  *
  * @param incommingFileSizeMB the file size in MB that needs to be free on temp storage.
  */
-async function rotateTempStorage(incommingFileSizeMB: number) {
+export async function rotateTempStorage(
+  incommingFileSizeMB: number,
+  storageLocation: string = TMP_DISK_PATH,
+  storageSize: number = TMP_DISK_SIZE_MB
+) {
   try {
     // an array of files in temp sorted by least recently accessed
-    const tmpFiles = readdirSync(TMP_DISK_PATH)
+    const tmpFiles = readdirSync(storageLocation)
       .map((file) => {
-        const fileStats = statSync(file);
-        return { filename: file, size: fileStats.size, accessed: fileStats.atime };
+        const filePath = join(storageLocation, file);
+        const fileStats = statSync(filePath);
+        return { filename: filePath, sizeMB: fileStats.size / (1024 * 1024), accessed: fileStats.atime };
       })
       .sort((file1, file2) => (file1.accessed < file2.accessed ? -1 : 1));
 
-    const consumedTemp = tmpFiles.reduce((total, file) => total + file.size, 0);
+    const consumedTemp = tmpFiles.reduce((total, file) => total + file.sizeMB, 0);
 
-    if (consumedTemp + incommingFileSizeMB > TMP_DISK_SIZE_MB) {
+    if (consumedTemp + incommingFileSizeMB > storageSize) {
       // We need to make space for the incoming tiles
-      const needToFree = consumedTemp + incommingFileSizeMB - TMP_DISK_SIZE_MB;
+      const needToFree = consumedTemp + incommingFileSizeMB - storageSize;
       tmpFiles.reduce((targetToFree, file) => {
         if (targetToFree <= 0) {
           // do nothing
@@ -141,7 +147,7 @@ async function rotateTempStorage(incommingFileSizeMB: number) {
         }
         // free some space
         unlinkSync(file.filename);
-        return targetToFree - file.size;
+        return targetToFree - file.sizeMB;
       }, needToFree);
     }
   } catch (err) {

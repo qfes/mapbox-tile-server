@@ -23,9 +23,14 @@ export class DirectoryTiles implements TileSource {
   public static async create(tileset: string) {
     debugger;
     const s3Key = join(tileset, "metadata.json");
-    const metadataJSON = await fetchMetadataJSON(s3Key);
     let directoryTiles;
-    directoryTiles = new DirectoryTiles(tileset, metadataJSON);
+    try {
+      const metadataJSON = await fetchMetadataJSON(s3Key);
+      directoryTiles = new DirectoryTiles(tileset, metadataJSON);
+    } catch(err) {
+      console.log(err);
+      throw err;
+    }
 
     return directoryTiles;
   }

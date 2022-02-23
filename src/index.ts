@@ -32,6 +32,7 @@ router.get("/:tileset.json", async ({ tileset }) => {
     if (typeof err === "string" && TileProvider.isNotFound(err)) {
       return notFound();
     }
+    console.log(err);
     return forbidden();
   }
 });
@@ -46,6 +47,7 @@ router.get("/:tileset/:z/:x/:y.vector.pbf", async ({ tileset, z, x, y }) => {
 
     return tile != null ? ok(tile) : noContent();
   } catch (err) {
+    console.log(err);
     return forbidden();
   }
 });
