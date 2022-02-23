@@ -1,19 +1,26 @@
 # mapbox-tile-server
 
-Defines a simple AWS lambda service for mapbox serving vector tiles from mbtiles databases on S3. This server doesn't support raster tiles, nor _very large_ databases.
+Defines a simple AWS lambda service for serving Mapbox vector tiles generated
+with [tippecanoe](https://github.com/mapbox/tippecanoe) from on S3. This server
+doesn't support raster tiles, nor _very large_ databases in `.mbtiles` format.
+Directories of tile files can be arbitrarily large.
 
-On first request for a given mbtiles database for a given lambda invocation, the mbtiles database is copied to `/tmp/` on the lambda instance. This storage location is limited to 512 MB. The full QLD isochrone mbtiles database is ~30 MB in size, so this limitation shouldn't be an issue for QLD specific databases.
+For `.mbtiles` databases: On first request for a given mbtiles tileset for a given lambda invocation, the mbtiles database is copied to `/tmp/` on the lambda instance. This storage location is limited to 512 MB. A full QLD road network isochrone mbtiles database is ~30 MB in size, so this limitation shouldn't be an issue for QLD specific databases.
 
 ## Usage
 
-Upload a _vector_ .mbtiles database to `env.BUCKET`, then request tiles and tilejson from the API gateway. Example:
+Using the aws CLI, Upload a _vector_ tileset as an .mbtiles database or directory structure of tiles to `env.BUCKET`, then request tiles and tilejson from the API gateway. Example:
+
 
 ```bash
 export BUCKET=qfes-mapbox-tiles
-export ENDPOINT=https://o7mvb95v3d.execute-api.ap-southeast-2.amazonaws.com
+export ENDPOINT=tiles.qfesanalytics.com
 
-# upload
+# upload mbtiles
 aws s3 cp ./isochrone.mbtiles s3://$BUCKET/isochrone.mbtiles
+
+# upload (sync) a directory
+aws s3 sync ./isochrone s3://$BUCKET/isochrone 
 
 # tilejson
 curl $ENDPOINT/isochrone.json

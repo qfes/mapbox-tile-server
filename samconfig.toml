@@ -9,4 +9,4 @@ region = "ap-southeast-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
-parameter_overrides = "tilebucket=\"qfes-mapbox-tiles\" endpoints=\"test.tiles.qfesanalytics.com\""
+parameter_overrides = "tilebucket=\"qfes-mapbox-tiles-test\" endpoints=\"test.tiles.qfesanalytics.com\""
