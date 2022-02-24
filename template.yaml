@@ -19,12 +19,12 @@ Parameters:
       - "qfes-mapbox-tiles"
       - "qfes-mapbox-tiles-test"
   endpoints:
-    Default: "b.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
+    Default: "a.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
     Description: "The endpoints to be returned to the tile requester (for sharding support)"
     Type: "String"
     AllowedValues:
-      - "b.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
       - "test.tiles.qfesanalytics.com"
+      - "a.tiles.qfesanalytics.com,tiles.qfesanalytics.com"
   domainname:
     Default: "test.tiles.qfesanalytics.com"
     Description: "The domain name to be bound to the API"

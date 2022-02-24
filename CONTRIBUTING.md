@@ -84,4 +84,24 @@ sudo -E npm run test
 
 ## Deploying to AWS
 
-TODO
+deploy a test instance 
+
+```
+sudo -E npm run deploy:test
+```
+
+deploy the prod instance
+
+```
+sudo -E npm run deploy
+```
+
+These use the sam deploy --guided option to step you through configuration.
+
+The check the domain name is tne one you want and answer yes to this question: 
+
+```
+  MapboxTileServerFunction may not have authorization defined, Is this okay? [y/N]: Y
+```
+
+Since our function doesn't have any authorisation mechanism (e.g. tokens), it's an open API endpoint.
