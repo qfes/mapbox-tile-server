@@ -51,7 +51,8 @@ export class MBTiles implements TileSource {
   getInfo() {
     const stmt = this._db.prepare(GET_INFO);
     const rows = stmt.all();
-    const metadataObject = Object.assign({}, ...rows);
+    const row_objects = rows.map((obj) => { return {[obj.name]: obj.value}; });
+    const metadataObject = Object.assign({}, ...row_objects);
 
     return generateTileJSON(this.id, metadataObject);
   }
